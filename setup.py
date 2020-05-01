@@ -53,7 +53,7 @@ font = ImageFont.truetype("Stencil_Regular.ttf", 60, encoding="unic")
 font1 = ImageFont.truetype("ROCK.ttf", 50, encoding="unic")
 font2 = ImageFont.truetype("ROCK.ttf", 35, encoding="unic")
 
-branc_names = 'MHKSKF'
+branc_names = 'BSLSKF'
 
 if branc_names == 'BSLSKF':
     branch_name = 'Barisal'
@@ -257,7 +257,7 @@ sector_credit_df = pd.read_sql_query(""" Select case when MAINCUSTYPE='RETAIL' t
                     on [CUST_OUT].CUSTOMER = CustomerInformation.IDCUST
                     where [ARCOUT].dbo.[CUST_OUT].AUDTORG like ? and TERMS<>'Cash') as TblCredit
                     where Days_Diff<=0
-                    group by case when MAINCUSTYPE='RETAIL' then 'Retail' else 'Institute' end""", connection,
+                    group by case when MAINCUSTYPE='RETAIL' then 'Retail' else 'Institute' end """, connection,
                                      params={branc_names})
 
 Institution = int(sector_credit_df.Amount.iloc[0])
@@ -787,12 +787,14 @@ monthly_sales = pd.read_sql_query(""" Declare @monthStartDay NVARCHAR(MAX);
                     where TRANSDATE between  @monthStartDay and @monthCurrentDay
                     and AUDTORG like ?
                     """, connection, params={branc_names})
+
 monthly_return_df = pd.read_sql_query("""select ISNULL(sum(EXTINVMISC), 0) as ReturnAmount from OESalesDetails
             where AUDTORG like ? and transtype<>1 and PRICELIST <> 0 and
             (TRANSDATE between
             (convert(varchar(8),DATEADD(mm, DATEDIFF(mm, 0, GETDATE()), 0),112))
             and (convert(varchar(8),DATEADD(D,0,GETDATE()),112)))
                         """, connection, params={branc_names})
+
 monthly_return = float(monthly_return_df['ReturnAmount'])
 m_sales = int(monthly_sales['MTDSales'])
 retn = abs(monthly_return)
@@ -852,7 +854,7 @@ ax.text(.5 * (left + right), .4 * (bottom + top), return_p,
 print('YTD Return Added')
 
 # # ---------- YAGO MTD  Return Box ------------------------
-yago_monthly_sales = pd.read_sql_query("""Declare @YagoMonthStartDay NVARCHAR(MAX);
+yago_monthly_sales = pd.read_sql_query(""" Declare @YagoMonthStartDay NVARCHAR(MAX);
                     Declare @YagomonthCurrentDay NVARCHAR(MAX);
                     SET @YagoMonthStartDay = convert(varchar(6), DATEFROMPARTS ( DATEPART(yyyy, GETDATE()) - 1, 1, 1 ), 112)
                     set @YagomonthCurrentDay = convert(varchar(8), DATEADD(year, -1, GETDATE()), 112)
@@ -860,6 +862,7 @@ yago_monthly_sales = pd.read_sql_query("""Declare @YagoMonthStartDay NVARCHAR(MA
                     where TRANSDATE between  @YagoMonthStartDay and @YagomonthCurrentDay
                     and AUDTORG like ?
                      """, connection, params={branc_names})
+
 yago_monthly_return_df = pd.read_sql_query("""select ISNULL(sum(EXTINVMISC), 0) as ReturnAmount from OESalesDetails
     where AUDTORG like ? and transtype<>1 and PRICELIST <> 0 and
     transdate between (convert(varchar(6), DATEFROMPARTS ( DATEPART(yyyy, GETDATE()) - 1, 1, 1 ), 112))
@@ -899,7 +902,7 @@ yago_yearly_sales = pd.read_sql_query("""
                     and (convert(varchar(8), DATEADD(year, -1, GETDATE()), 112))
                     """, connection, params={branc_names})
 yago_yearly_return = pd.read_sql_query("""
-                    select sum(EXTINVMISC) as ReturnAmount from OESalesDetails where
+                    select isnull(sum(EXTINVMISC), 0) as ReturnAmount from OESalesDetails where
                     AUDTORG like ? and
                     transtype<>1 and PRICELIST <> 0 and
                     (TRANSDATE between (convert(varchar(8), DATEFROMPARTS ( DATEPART(yyyy, GETDATE()) - 1, 1, 1 ), 112))
@@ -971,7 +974,7 @@ cause_wise_return_df = pd.read_sql_query("""select case
                     TRANSDATE between
                     (convert(varchar(8),DATEADD(mm, DATEDIFF(mm, 0, GETDATE()), 0),112))
                     and (convert(varchar(8),DATEADD(D,0,GETDATE()),112))
-                    group by Cause_Of_Return_ID""", connection, params={branc_names})
+                    group by Cause_Of_Return_ID """, connection, params={branc_names})
 
 Cause_name = cause_wise_return_df['Cause']
 y_pos = np.arange(len(Cause_name))
@@ -1037,56 +1040,77 @@ delivery_man_wise_return_df = pd.read_sql_query("""
     group by TWO.ShortName
     order by ReturnAmount DESC  """, connection, params=(branc_names, branc_names))
 
-DPNAME = delivery_man_wise_return_df['DPNAME']
-y_pos = np.arange(len(DPNAME))
-ReturnAmount = abs(delivery_man_wise_return_df['ReturnAmount'])
-ReturnAmount = ReturnAmount.values.tolist()
+if delivery_man_wise_return_df.empty == True:
+    fig, ax = plt.subplots(figsize=(12.81, 4.8))
+    plt.bar('No Record', 0.00, align='center', alpha=0.9)
 
-ran = max(ReturnAmount)
-color = '#418af2'
-fig, ax = plt.subplots(figsize=(12.81, 4.8))
-rects1 = plt.bar(y_pos, ReturnAmount, align='center', alpha=0.9, color=color)
+    plt.xlabel('Delivery Person', fontsize='14', color='black', fontweight='bold')
+    plt.ylabel('Return Percentage', fontsize='14', color='black', fontweight='bold')
+    plt.title("9. Delivery Person's Return %", color='#3e0a75', fontsize='16', fontweight='bold')
+    plt.tight_layout()
+    plt.savefig('Delivery_man_wise_return.png')
+
+else:
+    DPNAME = delivery_man_wise_return_df['DPNAME']
+    y_pos = np.arange(len(DPNAME))
+    ReturnAmount = abs(delivery_man_wise_return_df['ReturnAmount'])
+    ReturnAmount = ReturnAmount.values.tolist()
+
+    ran = max(ReturnAmount)
+    color = '#418af2'
+    fig, ax = plt.subplots(figsize=(12.81, 4.8))
+    rects1 = plt.bar(y_pos, ReturnAmount, align='center', alpha=0.9, color=color)
 
 
-def autolabel(bars):
-    loop = 0
-    for bar in bars:
-        show = ReturnAmount[loop]
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, (1.05 * height),
-                '%.2f' % (show) + '%', ha='center', va='bottom', fontsize=12, rotation=70, fontweight='bold')
-        loop = loop + 1
+    def autolabel(bars):
+        loop = 0
+        for bar in bars:
+            show = ReturnAmount[loop]
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2, (1.05 * height),
+                    '%.2f' % (show) + '%', ha='center', va='bottom', fontsize=12, rotation=70, fontweight='bold')
+            loop = loop + 1
 
 
-autolabel(rects1)
+    autolabel(rects1)
 
-plt.xticks(y_pos, DPNAME, rotation='vertical', fontsize='12')
-plt.yticks(np.arange(0, round(ran) + (.6 * round(ran))), fontsize='12')
-plt.xlabel('Delivery Person', fontsize='14', color='black', fontweight='bold')
-plt.ylabel('Return Percentage', fontsize='14', color='black', fontweight='bold')
-plt.title("9. Delivery Person's Return %", color='#3e0a75', fontsize='16', fontweight='bold')
-plt.tight_layout()
+    plt.xticks(y_pos, DPNAME, rotation='vertical', fontsize='12')
+    plt.yticks(np.arange(0, round(ran) + (.6 * round(ran))), fontsize='12')
+    plt.xlabel('Delivery Person', fontsize='14', color='black', fontweight='bold')
+    plt.ylabel('Return Percentage', fontsize='14', color='black', fontweight='bold')
+    plt.title("9. Delivery Person's Return %", color='#3e0a75', fontsize='16', fontweight='bold')
+    plt.tight_layout()
 
-plt.savefig('Delivery_man_wise_return.png')
+    plt.savefig('Delivery_man_wise_return.png')
 
-plt.close()
-print('9. Delivery man wise return generated')
+    plt.close()
+    print('9. Delivery man wise return generated')
 
 # ----------------------------------------------------------------------------
 
 daily_sales_df = pd.read_sql_query("""select Right(transdate,2) as [day], Sum(EXTINVMISC)/1000 as  EverydaySales from OESalesDetails  
                 where LEFT(TRANSDATE,6) =convert(varchar(6), GETDATE(),112)  and AUDTORG like ?
                 group by transdate
-                order by transdate""", connection, params={branc_names})
+                order by transdate """, connection, params={branc_names})
 
-EveryD_Target_df = pd.read_sql_query("""Declare @CurrentMonth NVARCHAR(MAX);
+EveryD_Target_df = pd.read_sql_query(""" Declare @CurrentMonth NVARCHAR(MAX);
                 Declare @DaysInMonth NVARCHAR(MAX);
                 SET @CurrentMonth = convert(varchar(6), GETDATE(),112)
                 SET @DaysInMonth = DAY(EOMONTH(GETDATE())) 
                 select ISNULL((Sum(TARGET)/@DaysInMonth), 0) as  YesterdayTarget from TDCL_BranchTarget  
                 where YEARMONTH = @CurrentMonth and AUDTORG like ?""", connection, params={branc_names})
-totarget = EveryD_Target_df.values
-target_for_target = int(totarget[0, 0])
+
+totarget = int(EveryD_Target_df.YesterdayTarget)
+if totarget == 0:
+    EveryD_Target_df = pd.read_sql_query(""" Declare @CurrentMonth NVARCHAR(MAX);
+                     Declare @DaysInMonth NVARCHAR(MAX);
+                     SET @CurrentMonth = convert(varchar(6), GETDATE()-1,112)
+                     SET @DaysInMonth = DAY(EOMONTH(GETDATE())) 
+                     select ISNULL((Sum(TARGET)/@DaysInMonth), 0) as  YesterdayTarget from TDCL_BranchTarget  
+                     where YEARMONTH = @CurrentMonth and AUDTORG like ?""", connection, params={branc_names})
+
+    target = int(EveryD_Target_df.YesterdayTarget)
+    print(target)
 
 Every_day = daily_sales_df['day'].tolist()
 
@@ -1099,7 +1123,7 @@ Target = []
 labell = []
 for z in y_pos:
     labell.append(n)
-    Target.append(int(target_for_target / 1000))
+    Target.append(int(target / 1000))
     n = n + 1
 
 fig, ax = plt.subplots(figsize=(12.81, 4.8))
@@ -1139,19 +1163,17 @@ print('12. Day Wise Target vs Sales')
 plt.close()
 # --------------------------------------------------------------------------
 
-LD_Target_df = pd.read_sql_query("""Declare @CurrentMonth NVARCHAR(MAX);
+LD_Target_df = pd.read_sql_query(""" Declare @CurrentMonth NVARCHAR(MAX);
                 Declare @DaysInMonth NVARCHAR(MAX);
                 SET @CurrentMonth = convert(varchar(6), GETDATE(),112)
                 SET @DaysInMonth = DAY(EOMONTH(GETDATE())) 
                 select ISNULL((Sum(TARGET)/@DaysInMonth), 0) as  YesterdayTarget from TDCL_BranchTarget  
-                where YEARMONTH = @CurrentMonth and AUDTORG like ?""", connection, params={branc_names})
+                where YEARMONTH = @CurrentMonth and AUDTORG like ? """, connection, params={branc_names})
 toto = LD_Target_df.values
 ld_target = int(toto[0, 0])
 
-MTD_Target_df = pd.read_sql_query("""Declare @CurrentMonth NVARCHAR(MAX);
-
+MTD_Target_df = pd.read_sql_query(""" Declare @CurrentMonth NVARCHAR(MAX);
                 SET @CurrentMonth = convert(varchar(6), GETDATE(),112)
-
                 select ISNULL((Sum(TARGET)), 0) as  MTDTarget from TDCL_BranchTarget  
                 where YEARMONTH = @CurrentMonth and AUDTORG like ? """, connection, params={branc_names})
 
@@ -1178,37 +1200,27 @@ final_mtd_target = int((Mtd_target / total_days) * no_of_days)
 
 YTD_Target_df = pd.read_sql_query(""" select ISNULL((Sum(TARGET)), 0) as  YTDTarget from TDCL_BranchTarget  
                 where convert(varchar(4), YEARMONTH,112) = convert(varchar(4), GETDATE(),112)
-                  and AUDTORG like ?""",
+                  and AUDTORG like ? """,
                                   connection, params={branc_names})
 
 yoyo = YTD_Target_df.values
-
 Ytd_target = int(yoyo[0, 0])
-
 final_ytd_target = int(Ytd_target - ((Mtd_target / total_days) * (total_days - no_of_days)))
 
-LD_Sales_df = pd.read_sql_query("""Declare @Currentday NVARCHAR(MAX);
-
+LD_Sales_df = pd.read_sql_query(""" Declare @Currentday NVARCHAR(MAX);
                 SET @Currentday = convert(varchar(8), GETDATE()-1,112);
-
                 select  Sum(EXTINVMISC) as  YesterdaySales from OESalesDetails  
                 where LEFT(TRANSDATE,8) = @Currentday and AUDTORG like ? """, connection, params={branc_names})
 
 Ld_toto = LD_Sales_df.values
-
 MTD_Sales_df = pd.read_sql_query(""" Declare @Currentmonth NVARCHAR(MAX);
-
                 SET @Currentmonth = convert(varchar(6), GETDATE(),112);
-
                 select  Sum(EXTINVMISC) as  MTDSales from OESalesDetails  
-                where LEFT(TRANSDATE,6) = @Currentmonth and AUDTORG like ?""", connection, params={branc_names})
+                where LEFT(TRANSDATE,6) = @Currentmonth and AUDTORG like ? """, connection, params={branc_names})
 
 MTD_momo = MTD_Sales_df.values
-
-YTD_Sales_df = pd.read_sql_query("""Declare @Currentyear NVARCHAR(MAX);
-
+YTD_Sales_df = pd.read_sql_query(""" Declare @Currentyear NVARCHAR(MAX);
                 SET @Currentyear = convert(varchar(4), GETDATE(),112);
-
                 select  Sum(EXTINVMISC) as  YTDSales from OESalesDetails  
                 where LEFT(TRANSDATE,4) = @Currentyear and AUDTORG like ? """, connection, params={branc_names})
 
@@ -1268,34 +1280,34 @@ daily_sales2_df = pd.read_sql_query("""select Right(transdate,2) as [day], Sum(E
                 group by transdate
                 order by transdate""", connection, params={branc_names})
 
-EveryD_Target2_df = pd.read_sql_query("""Declare @CurrentMonth NVARCHAR(MAX);
+EveryD_Target2_df = pd.read_sql_query(""" Declare @CurrentMonth NVARCHAR(MAX);
                 Declare @DaysInMonth NVARCHAR(MAX);
                 SET @CurrentMonth = convert(varchar(6), GETDATE(),112)
                 SET @DaysInMonth = DAY(EOMONTH(GETDATE())) 
                 select ISNULL(((Sum(TARGET)/@DaysInMonth)/1000), 0) as  YesterdayTarget from TDCL_BranchTarget  
-                where YEARMONTH = @CurrentMonth and AUDTORG like ?""", connection, params={branc_names})
-totarget = EveryD_Target2_df.values
-target_for_target = int(totarget[0, 0])
-# print(target_for_target)
+                where YEARMONTH = @CurrentMonth and AUDTORG like ? """, connection, params={branc_names})
+if totarget == 0:
+    EveryD_Target_df = pd.read_sql_query(""" Declare @CurrentMonth NVARCHAR(MAX);
+                    Declare @DaysInMonth NVARCHAR(MAX);
+                    SET @CurrentMonth = convert(varchar(6), GETDATE()-1,112)
+                    SET @DaysInMonth = DAY(EOMONTH(GETDATE())) 
+                    select ISNULL((Sum(TARGET)/@DaysInMonth), 0) as  YesterdayTarget from TDCL_BranchTarget  
+                    where YEARMONTH = @CurrentMonth and AUDTORG like ?""", connection, params={branc_names})
 
+    target = int(EveryD_Target_df.YesterdayTarget)
 
+target = int(EveryD_Target2_df.YesterdayTarget)
 Every_day = daily_sales2_df['day'].tolist()
-# print(Every_day)
 y_pos = np.arange(len(Every_day))
 
 every_day_sale = daily_sales2_df['EverydaySales'].tolist()
-# print(every_day_sale)
-
 n = 1
 Target = []
 labell = []
 for z in y_pos:
     labell.append(n)
-    Target.append(int(target_for_target / 1000))
+    Target.append(int(target / 1000))
     n = n + 1
-
-# print(Target)
-# print(labell)
 labell.append(20)
 
 # ----------------code for cumulitive sales------------
@@ -1306,7 +1318,7 @@ now = datetime.datetime.now()
 total_days = calendar.monthrange(now.year, now.month)[1]
 # print(total_days)
 
-new_target = target_for_target
+new_target = target
 # print(new_target)
 
 z = len(labell)
@@ -1336,7 +1348,7 @@ for val in values:
         for i in range(0, get_in + 1):
             final = final + values[i]
         new.append(final)
-        final = 0
+        final = 0                                
 
 # print(every_day_sale)
 # print(new)#--------------------------sales data
@@ -1772,17 +1784,17 @@ all_table = """ <!DOCTYPE html>
 # ------------ Email Section --------------------------------------
 # -----------------------------------------------------------------
 
-# ------------ Group email ---------------------------------------
+# ------------ Group email ----------------------------------------
 msgRoot = MIMEMultipart('related')
 me = 'erp-bi.service@transcombd.com'
-# to = ['rejaul.islam@transcombd.com', '']
-# cc = ['', '']
-# bcc = ['', '']
+to = ['rejaul.islam@transcombd.com', '']
+cc = ['', '']
+bcc = ['', '']
 
-to = ['tdclndm@tdcl.transcombd.com','']
-cc = ['hislam@skf.transcombd.com','muhammad.mainuddin@tdcl.transcombd.com','nurul.amin@tdcl.transcombd.com']
-bcc = ['biswascma@yahoo.com', 'bayezid@transcombd.com', 'zubair.transcom@gmail.com', 'yakub@transcombd.com',
-       'tawhid@transcombd.com', 'rejaul.islam@transcombd.com','fazle.rabby@transcombd.com','aftab.uddin@transcombd.com','roseline@transcombd.com']
+# to = ['tdclndm@tdcl.transcombd.com',''] cc = ['hislam@skf.transcombd.com','muhammad.mainuddin@tdcl.transcombd.com',
+# 'nurul.amin@tdcl.transcombd.com'] bcc = ['biswascma@yahoo.com', 'bayezid@transcombd.com',
+# 'zubair.transcom@gmail.com', 'yakub@transcombd.com', 'tawhid@transcombd.com', 'rejaul.islam@transcombd.com',
+# 'fazle.rabby@transcombd.com','aftab.uddin@transcombd.com','roseline@transcombd.com']
 
 recipient = to + cc + bcc
 
@@ -1956,4 +1968,3 @@ server.sendmail(me, recipient, msgRoot.as_string())
 print('Mail Send')
 print('-------------------')
 server.close()
-
