@@ -4,10 +4,10 @@ block_cipher = None
 
 
 a = Analysis(['setup.py'],
-             pathex=['D:\\Python Code\\SKF_Final_outstanding_report'],
+             pathex=['D:\\Python Code\\SKF_Outstanding_Report'],
              binaries=[],
              datas=[],
-             hiddenimports=['pkg_resources.py2_warn'],
+             hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
