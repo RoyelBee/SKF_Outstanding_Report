@@ -1775,14 +1775,14 @@ all_table = """ <!DOCTYPE html>
 # ------------ Group email ---------------------------------------
 msgRoot = MIMEMultipart('related')
 me = 'erp-bi.service@transcombd.com'
-# to = ['rejaul.islam@transcombd.com', '']
-# cc = ['', '']
-# bcc = ['', '']
+to = ['rejaul.islam@transcombd.com', '']
+cc = ['', '']
+bcc = ['', '']
 
-to = ['tdclndm@tdcl.transcombd.com','']
-cc = ['hislam@skf.transcombd.com','muhammad.mainuddin@tdcl.transcombd.com','nurul.amin@tdcl.transcombd.com']
-bcc = ['biswascma@yahoo.com', 'bayezid@transcombd.com', 'zubair.transcom@gmail.com', 'yakub@transcombd.com',
-       'tawhid@transcombd.com', 'rejaul.islam@transcombd.com','fazle.rabby@transcombd.com','aftab.uddin@transcombd.com','roseline@transcombd.com']
+# to = ['tdclndm@tdcl.transcombd.com','']
+# cc = ['hislam@skf.transcombd.com','muhammad.mainuddin@tdcl.transcombd.com','nurul.amin@tdcl.transcombd.com']
+# bcc = ['biswascma@yahoo.com', 'bayezid@transcombd.com', 'zubair.transcom@gmail.com', 'yakub@transcombd.com',
+#        'tawhid@transcombd.com', 'rejaul.islam@transcombd.com','fazle.rabby@transcombd.com','aftab.uddin@transcombd.com','roseline@transcombd.com']
 
 recipient = to + cc + bcc
 
