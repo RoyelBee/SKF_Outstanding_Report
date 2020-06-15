@@ -53,23 +53,18 @@ font = ImageFont.truetype("Stencil_Regular.ttf", 60, encoding="unic")
 font1 = ImageFont.truetype("ROCK.ttf", 50, encoding="unic")
 font2 = ImageFont.truetype("ROCK.ttf", 35, encoding="unic")
 
-branc_names = 'MHKSKF'
+branc_names = 'HZJSKF'
 
 if branc_names == 'BSLSKF':
     branch_name = 'Barisal'
-
 if branc_names == 'SYLSKF':
     branch_name = 'Shylet'
-
 if branc_names == 'CTGSKF':
     branch_name = 'Chittagong-South'
-
 if branc_names == 'HZJSKF':
     branch_name = 'Chandpur'
-
 if branc_names == 'FRDSKF':
     branch_name = 'Faridpur'
-
 if branc_names == 'MHKSKF':
     branch_name = 'Mohakhali'
 
@@ -78,6 +73,11 @@ branch.text((25, 270), branch_name + " Branch", (255, 209, 0), font=font1)
 timestore.text((25, 435), time + "\n" + day, (255, 255, 255), font=font2)
 img.save('banner_ai.png')
 
+
+# img.show()
+
+
+# sys.exit()
 
 # ----------------------------new code-----------------------------
 # -----------convert the number into thousand----------------------
@@ -539,7 +539,8 @@ plt.close()
 print('4. Aging Mature Credit Generated')
 
 # --------------------------- Sector wise cash --------------------------
-sector_wise_cash_df = pd.read_sql_query(""" Select case when MAINCUSTYPE='RETAIL' then 'Retail' else 'Institute' end  as CustType,Sum(OUT_NET) as Amount from
+sector_wise_cash_df = pd.read_sql_query(""" 
+                    Select case when MAINCUSTYPE='RETAIL' then 'Retail' else 'Institute' end  as CustType,Sum(OUT_NET) as Amount from
                     (select INVNUMBER,INVDATE,
                     CUSTOMER,TERMS,MAINCUSTYPE,
                     CustomerInformation.CREDIT_LIMIT_DAYS,
@@ -549,8 +550,9 @@ sector_wise_cash_df = pd.read_sql_query(""" Select case when MAINCUSTYPE='RETAIL
                     on [CUST_OUT].CUSTOMER = CustomerInformation.IDCUST
                     where [ARCOUT].dbo.[CUST_OUT].AUDTORG like ? and TERMS='Cash') as TblCredit
 
-                    group by case when MAINCUSTYPE='RETAIL' then 'Retail' else 'Institute' end """, connection,
-                                        params={branc_names})
+                    group by case when MAINCUSTYPE='RETAIL' then 'Retail' else 'Institute' end """,
+                    connection,params={branc_names})
+
 Institution = int(sector_wise_cash_df.Amount.iloc[0])
 retail = int(sector_wise_cash_df.Amount.iloc[1])
 
@@ -558,6 +560,7 @@ values = [Institution, retail]
 colors = ['#a9e11a', '#1798ca']
 legend_element = [Patch(facecolor='#a9e11a', label='Institution'),
                   Patch(facecolor='#1798ca', label='Retail')]
+
 sector_total_credit = Institution + retail
 sector_total_credit = "Total \n" + joker(sector_total_credit)
 
@@ -746,11 +749,13 @@ lastDaySales = pd.read_sql_query("""
                     where TRANSDATE = convert(varchar(8),DATEADD(D,0,GETDATE()-1),112)
                     and AUDTORG like ?
                                     """, connection, params={branc_names})
+
 LastDayReturn = pd.read_sql_query("""
                     select ISNULL(sum(EXTINVMISC), 0) as ReturnAmount from OESalesDetails
                     where AUDTORG like ? and transtype<>1 and PRICELIST <> 0 and
                     (TRANSDATE = convert(varchar(8),DATEADD(D,0,GETDATE()-1),112))
                      """, connection, params={branc_names})
+
 ld_sales = int(lastDaySales['LastDaySales'])
 ld_return = float(LastDayReturn['ReturnAmount'])
 l_retn = abs(ld_return)
@@ -758,16 +763,19 @@ ret1 = float((l_retn / ld_sales) * 100)
 return_p = '%.2f' % (ret1)
 return_p = str(return_p) + '%'
 kpi_label = 'LD' + "\n"
+
 ax.text(.5 * (left + right), .5 * (bottom + top), kpi_label,
         horizontalalignment='center',
         verticalalignment='center',
         fontsize=24, color='black',
         transform=ax.transAxes)
+
 ax.text(.5 * (left + right), .4 * (bottom + top), return_p,
         horizontalalignment='center',
         verticalalignment='center',
         fontsize=34, color='red',
         transform=ax.transAxes)
+
 print('Last Day Return Added')
 # --------------------  Monthly  Return  Box --------------------------------
 left, width = .20, .19
@@ -779,7 +787,8 @@ p = patches.Rectangle(
     color='#fcea17'
 )
 ax.add_patch(p)
-monthly_sales = pd.read_sql_query(""" Declare @monthStartDay NVARCHAR(MAX);
+monthly_sales = pd.read_sql_query("""
+                    Declare @monthStartDay NVARCHAR(MAX);
                     Declare @monthCurrentDay NVARCHAR(MAX);
                     SET @monthStartDay = convert(varchar(8),DATEADD(month, DATEDIFF(month, 0,  GETDATE()), 0),112)
                     set @monthCurrentDay = convert(varchar(8),DATEADD(D,0,GETDATE()),112);
@@ -787,12 +796,15 @@ monthly_sales = pd.read_sql_query(""" Declare @monthStartDay NVARCHAR(MAX);
                     where TRANSDATE between  @monthStartDay and @monthCurrentDay
                     and AUDTORG like ?
                     """, connection, params={branc_names})
-monthly_return_df = pd.read_sql_query("""select ISNULL(sum(EXTINVMISC), 0) as ReturnAmount from OESalesDetails
+
+monthly_return_df = pd.read_sql_query("""
+            select ISNULL(sum(EXTINVMISC), 0) as ReturnAmount from OESalesDetails
             where AUDTORG like ? and transtype<>1 and PRICELIST <> 0 and
             (TRANSDATE between
             (convert(varchar(8),DATEADD(mm, DATEDIFF(mm, 0, GETDATE()), 0),112))
             and (convert(varchar(8),DATEADD(D,0,GETDATE()),112)))
-                        """, connection, params={branc_names})
+            """, connection, params={branc_names})
+
 monthly_return = float(monthly_return_df['ReturnAmount'])
 m_sales = int(monthly_sales['MTDSales'])
 retn = abs(monthly_return)
@@ -800,22 +812,26 @@ ret1 = float((retn / m_sales) * 100)
 return_p = '%.2f' % (ret1)
 return_p = str(return_p) + '%'
 kpi_label = 'MTD' + "\n"
+
 ax.text(.5 * (left + right), .5 * (bottom + top), kpi_label,
         horizontalalignment='center',
         verticalalignment='center',
         fontsize=24, color='black',
         transform=ax.transAxes)
+
 ax.text(.5 * (left + right), .4 * (bottom + top), return_p,
         horizontalalignment='center',
         verticalalignment='center',
         fontsize=34, color='red',
         transform=ax.transAxes)
 print('MTD Return Added')
+
 # # ---------- Yearly return Box ------------------------
 yearly_sales = pd.read_sql_query("""
                 select  Sum(EXTINVMISC) as  YTDSales from OESalesDetails
                 where AUDTORG like ? AND TRANSDATE>= (convert(varchar(8),DATEADD(yy, DATEDIFF(yy, 0, GETDATE()), 0),112))
                 """, connection, params={branc_names})
+
 yearly_return = pd.read_sql_query("""
                       select sum(EXTINVMISC) as ReturnAmount from OESalesDetails where
                     AUDTORG like ? and
@@ -823,6 +839,7 @@ yearly_return = pd.read_sql_query("""
                     (TRANSDATE between (convert(varchar(8),DATEADD(yy, DATEDIFF(yy, 0, GETDATE()), 0),112))
                     and (convert(varchar(8),DATEADD(D,0,GETDATE()),112)))
      """, connection, params={branc_names})
+
 left, width = .40, .19
 bottom, height = .5, .5
 right = left + width
@@ -839,20 +856,24 @@ p = patches.Rectangle(
 )
 ax.add_patch(p)
 kpi_label = 'YTD' + "\n"
+
 ax.text(.5 * (left + right), .5 * (bottom + top), kpi_label,
         horizontalalignment='center',
         verticalalignment='center',
         fontsize=24, color='black',
         transform=ax.transAxes)
+
 ax.text(.5 * (left + right), .4 * (bottom + top), return_p,
         horizontalalignment='center',
         verticalalignment='center',
         fontsize=34, color='red',
         transform=ax.transAxes)
+
 print('YTD Return Added')
 
 # # ---------- YAGO MTD  Return Box ------------------------
-yago_monthly_sales = pd.read_sql_query("""Declare @YagoMonthStartDay NVARCHAR(MAX);
+yago_monthly_sales = pd.read_sql_query("""
+                    Declare @YagoMonthStartDay NVARCHAR(MAX);
                     Declare @YagomonthCurrentDay NVARCHAR(MAX);
                     SET @YagoMonthStartDay = convert(varchar(6), DATEFROMPARTS ( DATEPART(yyyy, GETDATE()) - 1, 1, 1 ), 112)
                     set @YagomonthCurrentDay = convert(varchar(8), DATEADD(year, -1, GETDATE()), 112)
@@ -860,11 +881,14 @@ yago_monthly_sales = pd.read_sql_query("""Declare @YagoMonthStartDay NVARCHAR(MA
                     where TRANSDATE between  @YagoMonthStartDay and @YagomonthCurrentDay
                     and AUDTORG like ?
                      """, connection, params={branc_names})
-yago_monthly_return_df = pd.read_sql_query("""select ISNULL(sum(EXTINVMISC), 0) as ReturnAmount from OESalesDetails
-    where AUDTORG like ? and transtype<>1 and PRICELIST <> 0 and
-    transdate between (convert(varchar(6), DATEFROMPARTS ( DATEPART(yyyy, GETDATE()) - 1, 1, 1 ), 112))
-    and (convert(varchar(8), DATEADD(year, -1, GETDATE()), 112))
-                        """, connection, params={branc_names})
+
+yago_monthly_return_df = pd.read_sql_query("""
+            select ISNULL(sum(EXTINVMISC), 0) as ReturnAmount from OESalesDetails
+            where AUDTORG like ? and transtype<>1 and PRICELIST <> 0 and
+            transdate between (convert(varchar(6), DATEFROMPARTS ( DATEPART(yyyy, GETDATE()) - 1, 1, 1 ), 112))
+            and (convert(varchar(8), DATEADD(year, -1, GETDATE()), 112))
+            """, connection, params={branc_names})
+
 monthly_return = float(yago_monthly_return_df['ReturnAmount'])
 m_sales = int(yago_monthly_sales['MTDSales'])
 left, width = .60, .19
@@ -886,18 +910,21 @@ ax.text(.5 * (left + right), .5 * (bottom + top), kpi_label,
         verticalalignment='center',
         fontsize=24, color='black',
         transform=ax.transAxes)
+
 ax.text(.5 * (left + right), .4 * (bottom + top), return_p,
         horizontalalignment='center',
         verticalalignment='center',
         fontsize=34, color='black',
         transform=ax.transAxes)
 print('YAGO MTD Return Added')
+
 # # # ---------- YAGO YTD Return  Box ------------------------
 yago_yearly_sales = pd.read_sql_query("""
                     select  Sum(EXTINVMISC) as  YTDSales from OESalesDetails
                     where AUDTORG like ? AND TRANSDATE between (convert(varchar(8), DATEFROMPARTS ( DATEPART(yyyy, GETDATE()) - 1, 1, 1 ), 112))
                     and (convert(varchar(8), DATEADD(year, -1, GETDATE()), 112))
                     """, connection, params={branc_names})
+
 yago_yearly_return = pd.read_sql_query("""
                     select sum(EXTINVMISC) as ReturnAmount from OESalesDetails where
                     AUDTORG like ? and
@@ -905,6 +932,7 @@ yago_yearly_return = pd.read_sql_query("""
                     (TRANSDATE between (convert(varchar(8), DATEFROMPARTS ( DATEPART(yyyy, GETDATE()) - 1, 1, 1 ), 112))
                     and (convert(varchar(8), DATEADD(year, -1, GETDATE()), 112)))
                     """, connection, params={branc_names})
+
 left, width = .80, .20
 bottom, height = .5, .5
 right = left + width
@@ -953,320 +981,379 @@ dst.save('main_return.png')
 
 # ------------------------Cause wise return--------------------------
 
-cause_wise_return_df = pd.read_sql_query("""select case
-                    when Cause_Of_Return_ID = '000'  THEN 'Not Mentioned'
-                    when Cause_Of_Return_ID = '005'  THEN 'Product Short'
-                    when Cause_Of_Return_ID = '010'  THEN 'Shop Closed'
-                    when Cause_Of_Return_ID = '015'  THEN 'Canceled/Cash Short'
-                    when Cause_Of_Return_ID = '020'  THEN 'Computer Mistake'
-                    when Cause_Of_Return_ID = '025'  THEN 'Next Day Delivery'
-                    when Cause_Of_Return_ID = '030'  THEN 'Part Sale'
-                    when Cause_Of_Return_ID = '035'  THEN 'Not Ordered'
-                    when Cause_Of_Return_ID = '040'  THEN 'Not Delivered'
-                    when Cause_Of_Return_ID = '050'  THEN 'Approved Return'
-                    when Cause_Of_Return_ID = '065'  THEN 'MSO Mistake'
-                    End AS Cause
-                    , ISNULL(sum(EXTINVMISC), 0) as ReturnAmount from OESalesDetails
-                    where AUDTORG like ? and transtype<>1 and PRICELIST <> 0 and
-                    TRANSDATE between
-                    (convert(varchar(8),DATEADD(mm, DATEDIFF(mm, 0, GETDATE()), 0),112))
-                    and (convert(varchar(8),DATEADD(D,0,GETDATE()),112))
-                    group by Cause_Of_Return_ID""", connection, params={branc_names})
+try:
+    cause_wise_return_df = pd.read_sql_query("""
+                        select case
+                        when Cause_Of_Return_ID = '000'  THEN 'Not Mentioned'
+                        when Cause_Of_Return_ID = '005'  THEN 'Product Short'
+                        when Cause_Of_Return_ID = '010'  THEN 'Shop Closed'
+                        when Cause_Of_Return_ID = '015'  THEN 'Canceled/Cash Short'
+                        when Cause_Of_Return_ID = '020'  THEN 'Computer Mistake'
+                        when Cause_Of_Return_ID = '025'  THEN 'Next Day Delivery'
+                        when Cause_Of_Return_ID = '030'  THEN 'Part Sale'
+                        when Cause_Of_Return_ID = '035'  THEN 'Not Ordered'
+                        when Cause_Of_Return_ID = '040'  THEN 'Not Delivered'
+                        when Cause_Of_Return_ID = '050'  THEN 'Approved Return'
+                        when Cause_Of_Return_ID = '065'  THEN 'MSO Mistake'
+                        End AS Cause
+                        , ISNULL(sum(EXTINVMISC), 0) as ReturnAmount from OESalesDetails
+                        where AUDTORG like ? and transtype<>1 and PRICELIST <> 0 and
+                        TRANSDATE between
+                        (convert(varchar(8),DATEADD(mm, DATEDIFF(mm, 0, GETDATE()), 0),112))
+                        and (convert(varchar(8),DATEADD(D,0,GETDATE()),112))
+                        group by Cause_Of_Return_ID""", connection, params={branc_names})
 
-Cause_name = cause_wise_return_df['Cause']
-y_pos = np.arange(len(Cause_name))
-Return_amount = abs(cause_wise_return_df['ReturnAmount'])
-Return_amount = Return_amount.values.tolist()
+    Cause_name = cause_wise_return_df['Cause']
+    y_pos = np.arange(len(Cause_name))
+    Return_amount = abs(cause_wise_return_df['ReturnAmount'])
+    Return_amount = Return_amount.values.tolist()
 
-total = sum(Return_amount)
+    total = sum(Return_amount)
 
-for_looping = 0
-new_return_amount = []
-for some_value in Return_amount:
-    changed_values = (Return_amount[for_looping] / total) * 100
-    new_return_amount.insert(for_looping, changed_values)
-    for_looping = for_looping + 1
+    for_looping = 0
+    new_return_amount = []
+    for some_value in Return_amount:
+        changed_values = (Return_amount[for_looping] / total) * 100
+        new_return_amount.insert(for_looping, changed_values)
+        for_looping = for_looping + 1
 
-color = ['#1ff015', '#418af2', '#f037d9', '#ecc13f', '#e2360a', '#1ff015', '#418af2', '#f037d9', '#ecc13f',
-         '#e2360a']
-width = 0.75
+    color = ['#1ff015', '#418af2', '#f037d9', '#ecc13f', '#e2360a', '#1ff015', '#418af2', '#f037d9', '#ecc13f',
+             '#e2360a']
+    width = 0.75
 
-plt.figure(figsize=(2, 1))
-fig, ax = plt.subplots()
-rects1 = plt.bar(y_pos, new_return_amount, width, align='center', alpha=0.9, color=color)
-
-
-def autolabel(bars):
-    loop = 0
-    for bar in bars:
-        show = float((Return_amount[loop] / total) * 100)
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2., 1 * height,
-                '%.2f' % (show) + '%',
-                ha='center', va='bottom', fontsize=12, rotation=45, fontweight='bold')
-        loop = loop + 1
+    plt.figure(figsize=(2, 1))
+    fig, ax = plt.subplots()
+    rects1 = plt.bar(y_pos, new_return_amount, width, align='center', alpha=0.9, color=color)
 
 
-autolabel(rects1)
-plt.xticks(y_pos, Cause_name, fontsize='12', color='black')
-plt.yticks(np.arange(0, 101, 10), color='black', fontsize='12')
-plt.xlabel('Return Cause', fontsize='14', color='black', fontweight='bold')
-plt.ylabel('Return Percentage', fontsize='14', color='black', fontweight='bold')
-plt.title('10. Cause wise Return', color='#3e0a75', fontsize='16', fontweight='bold')
-plt.tight_layout()
-plt.savefig('Cause_with_return.png')
-plt.close()
-print('10. cause wise return generated')
+    def autolabel(bars):
+        loop = 0
+        for bar in bars:
+            show = float((Return_amount[loop] / total) * 100)
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2., 1 * height,
+                    '%.2f' % (show) + '%',
+                    ha='center', va='bottom', fontsize=12, rotation=45, fontweight='bold')
+            loop = loop + 1
 
+
+    autolabel(rects1)
+    plt.xticks(y_pos, Cause_name, fontsize='12', color='black')
+    plt.yticks(np.arange(0, 101, 10), color='black', fontsize='12')
+    plt.xlabel('Return Cause', fontsize='14', color='black', fontweight='bold')
+    plt.ylabel('Return Percentage', fontsize='14', color='black', fontweight='bold')
+    plt.title('10. Cause wise Return', color='#3e0a75', fontsize='16', fontweight='bold')
+    plt.tight_layout()
+    plt.savefig('Cause_with_return.png')
+    plt.close()
+    print('10. cause wise return generated')
+except:
+    print("sorry! 10. cause wise return cannot be generated")
+    plt.figure(figsize=(6.4, 4.8))
+    plt.text(0.5, 0.5, str('Sorry! Due to data unavailability, the graph cannot be generated'), fontsize=25,
+             color='red',
+             horizontalalignment='center', verticalalignment='center')
+    plt.axis('off')
+    # plt.show()
+    plt.savefig('Cause_with_return.png')
+    plt.close()
 # ----------------------Delivery man wise return---------------------
 
-delivery_man_wise_return_df = pd.read_sql_query("""
-    select TWO.ShortName as DPNAME, ISNULL(SUM(Sales.ReturnAmount), 0) as ReturnAmount from
-    (select  DPID, AUDTORG,
-    ISNULL(sum(case when TRANSTYPE<>1 then INVNETH *-1 end), 0) /sum(case when TRANSTYPE=1 then INVNETH end)*100 as ReturnAmount
-    from OESalesSummery
-    where AUDTORG like ? and 
-    left(TRANSDATE,6)=convert(varchar(6),getdate(),112)
-    group by DPID,AUDTORG) as Sales
-    left join
-    (select distinct AUDTORG,ShortName,DPID from DP_ShortName where AUDTORG like ?) as TWO
-    on Sales.DPID = TWO.DPID
-    and Sales.AUDTORG=TWO.AUDTORG
-    where TWO.ShortName is not null
-    and Sales.ReturnAmount>0
-    group by TWO.ShortName
-    order by ReturnAmount DESC  """, connection, params=(branc_names, branc_names))
+try:
+    delivery_man_wise_return_df = pd.read_sql_query("""
+            select TWO.ShortName as DPNAME, SUM(Sales.ReturnAmount) as ReturnAmount from
+            (select  DPID, AUDTORG,ISNULL(sum(case when TRANSTYPE<>1 then INVNETH *-1 end), 0) /ISNULL(sum(case when TRANSTYPE=1 then INVNETH end), 0)*100 as ReturnAmount from OESalesSummery
+            where AUDTORG like ? and 
+            left(TRANSDATE,6)=convert(varchar(6),getdate(),112)
+            group by DPID,AUDTORG) as Sales
+            left join
+            (select distinct AUDTORG,ShortName,DPID from DP_ShortName where AUDTORG like ?) as TWO
+            on Sales.DPID = TWO.DPID
+            and Sales.AUDTORG=TWO.AUDTORG
+            where TWO.ShortName is not null
+            and Sales.ReturnAmount>0
+            group by TWO.ShortName
+            order by ReturnAmount DESC""", connection, params=(branc_names, branc_names))
 
-DPNAME = delivery_man_wise_return_df['DPNAME']
-y_pos = np.arange(len(DPNAME))
-ReturnAmount = abs(delivery_man_wise_return_df['ReturnAmount'])
-ReturnAmount = ReturnAmount.values.tolist()
+    DPNAME = delivery_man_wise_return_df['DPNAME']
+    y_pos = np.arange(len(DPNAME))
+    ReturnAmount = abs(delivery_man_wise_return_df['ReturnAmount'])
+    ReturnAmount = ReturnAmount.values.tolist()
 
-ran = max(ReturnAmount)
-color = '#418af2'
-fig, ax = plt.subplots(figsize=(12.81, 4.8))
-rects1 = plt.bar(y_pos, ReturnAmount, align='center', alpha=0.9, color=color)
-
-
-def autolabel(bars):
-    loop = 0
-    for bar in bars:
-        show = ReturnAmount[loop]
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, (1.05 * height),
-                '%.2f' % (show) + '%', ha='center', va='bottom', fontsize=12, rotation=70, fontweight='bold')
-        loop = loop + 1
+    ran = max(ReturnAmount)
+    color = '#418af2'
+    fig, ax = plt.subplots(figsize=(12.81, 4.8))
+    rects1 = plt.bar(y_pos, ReturnAmount, align='center', alpha=0.9, color=color)
 
 
-autolabel(rects1)
-
-plt.xticks(y_pos, DPNAME, rotation='vertical', fontsize='12')
-plt.yticks(np.arange(0, round(ran) + (.6 * round(ran))), fontsize='12')
-plt.xlabel('Delivery Person', fontsize='14', color='black', fontweight='bold')
-plt.ylabel('Return Percentage', fontsize='14', color='black', fontweight='bold')
-plt.title("9. Delivery Person's Return %", color='#3e0a75', fontsize='16', fontweight='bold')
-plt.tight_layout()
-
-plt.savefig('Delivery_man_wise_return.png')
-
-plt.close()
-print('9. Delivery man wise return generated')
-
-# ----------------------------------------------------------------------------
-
-daily_sales_df = pd.read_sql_query("""select Right(transdate,2) as [day], Sum(EXTINVMISC)/1000 as  EverydaySales from OESalesDetails  
-                where LEFT(TRANSDATE,6) =convert(varchar(6), GETDATE(),112)  and AUDTORG like ?
-                group by transdate
-                order by transdate""", connection, params={branc_names})
-
-EveryD_Target_df = pd.read_sql_query("""Declare @CurrentMonth NVARCHAR(MAX);
-                Declare @DaysInMonth NVARCHAR(MAX);
-                SET @CurrentMonth = convert(varchar(6), GETDATE(),112)
-                SET @DaysInMonth = DAY(EOMONTH(GETDATE())) 
-                select ISNULL((Sum(TARGET)/@DaysInMonth), 0) as  YesterdayTarget from TDCL_BranchTarget  
-                where YEARMONTH = @CurrentMonth and AUDTORG like ?""", connection, params={branc_names})
-totarget = EveryD_Target_df.values
-target_for_target = int(totarget[0, 0])
-
-Every_day = daily_sales_df['day'].tolist()
-
-y_pos = np.arange(len(Every_day))
-
-every_day_sale = daily_sales_df['EverydaySales'].tolist()
-
-n = 1
-Target = []
-labell = []
-for z in y_pos:
-    labell.append(n)
-    Target.append(int(target_for_target / 1000))
-    n = n + 1
-
-fig, ax = plt.subplots(figsize=(12.81, 4.8))
-labels = labell
-
-x = np.arange(len(labels))  # the label locations
-width = 0.35  # the width of the bars
-
-rects2 = ax.bar(y_pos, every_day_sale, width, label='Sales')
-maf_kor4 = max(Target)
-# Add some text for labels, title and custom x-axis tick labels, etc.
-line = ax.plot(Target, color='orange', label='Target')
-plt.yticks(np.arange(0, maf_kor4 + (.8 * maf_kor4), maf_kor4 / 5), fontsize=12)
-ax.set_ylabel('Amount', fontsize='14', color='black', fontweight='bold')
-ax.set_xlabel('Day', fontsize='14', color='black', fontweight='bold')
-ax.set_title('12. MTD Target vs Sales', fontsize=16, fontweight='bold', color='#3e0a75')
-
-ax.set_xticks(x)
-ax.set_xticklabels(labels)
-ax.legend()
+    def autolabel(bars):
+        loop = 0
+        for bar in bars:
+            show = ReturnAmount[loop]
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2, (1.05 * height),
+                    '%.2f' % (show) + '%', ha='center', va='bottom', fontsize=12, rotation=70, fontweight='bold')
+            loop = loop + 1
 
 
-def autolabel(bars):
-    for bar in bars:
-        height = int(bar.get_height())
-        ax.text(bar.get_x() + bar.get_width() / 2., .995 * height,
-                get_value(str(height)) + "K",
-                ha='center', va='bottom', fontsize=12, rotation=45, fontweight='bold')
+    autolabel(rects1)
+
+    plt.xticks(y_pos, DPNAME, rotation='vertical', fontsize='12')
+    plt.yticks(np.arange(0, round(ran) + (.6 * round(ran))), fontsize='12')
+    plt.xlabel('Delivery Person', fontsize='14', color='black', fontweight='bold')
+    plt.ylabel('Return Percentage', fontsize='14', color='black', fontweight='bold')
+    plt.title("9. Delivery Person's Return %", color='#3e0a75', fontsize='16', fontweight='bold')
+    plt.tight_layout()
+
+    plt.savefig('Delivery_man_wise_return.png')
+
+    plt.close()
+    print('9. Delivery man wise return generated')
+except:
+    print("sorry! 9. Delivery man wise return cannot be generated")
+    plt.figure(figsize=(12.81, 4.8))
+    plt.text(0.5, 0.5, str('Sorry! Due to data unavailability, the graph cannot be generated'), fontsize=25,
+             color='red',
+             horizontalalignment='center', verticalalignment='center')
+    plt.axis('off')
+    # plt.show()
+    plt.savefig('Delivery_man_wise_return.png')
+    plt.close()
+# ----------------------------------12. Day Wise Target vs Sales ------------------------------------------
+try:
+    daily_sales_df = pd.read_sql_query("""select Right(transdate,2) as [day], Sum(EXTINVMISC)/1000 as  EverydaySales from OESalesDetails  
+                    where LEFT(TRANSDATE,6) =convert(varchar(6), GETDATE(),112)  and AUDTORG like ?
+                    group by transdate
+                    order by transdate""", connection, params={branc_names})
+
+    EveryD_Target_df = pd.read_sql_query("""Declare @CurrentMonth NVARCHAR(MAX);
+                    Declare @DaysInMonth NVARCHAR(MAX);
+                    SET @CurrentMonth = convert(varchar(6), GETDATE(),112)
+                    SET @DaysInMonth = DAY(EOMONTH(GETDATE())) 
+                    select ISNULL((Sum(TARGET)/@DaysInMonth), 0) as  YesterdayTarget from TDCL_BranchTarget  
+                    where YEARMONTH = @CurrentMonth and AUDTORG like ?""", connection, params={branc_names})
+
+    totarget = EveryD_Target_df.values
+    target_for_target = int(totarget[0, 0])
+
+    Every_day = daily_sales_df['day'].tolist()
+
+    y_pos = np.arange(len(Every_day))
+
+    every_day_sale = daily_sales_df['EverydaySales'].tolist()
+
+    n = 1
+    Target = []
+    labell = []
+    for z in y_pos:
+        labell.append(n)
+        Target.append(int(target_for_target / 1000))
+        n = n + 1
+
+    fig, ax = plt.subplots(figsize=(12.81, 4.8))
+    labels = labell
+
+    x = np.arange(len(labels))  # the label locations
+    width = 0.35  # the width of the bars
+
+    rects2 = ax.bar(y_pos, every_day_sale, width, label='Sales')
+    maf_kor4 = max(every_day_sale)
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    line = ax.plot(Target, color='orange', label='Target')
+    plt.yticks(np.arange(0, maf_kor4 + (.8 * maf_kor4), maf_kor4 / 5), fontsize=12)
+    ax.set_ylabel('Amount', fontsize='14', color='black', fontweight='bold')
+    ax.set_xlabel('Day', fontsize='14', color='black', fontweight='bold')
+    ax.set_title('12. MTD Target vs Sales', fontsize=16, fontweight='bold', color='#3e0a75')
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.legend()
 
 
-autolabel(rects2)
+    def autolabel(bars):
+        for bar in bars:
+            height = int(bar.get_height())
+            ax.text(bar.get_x() + bar.get_width() / 2., .995 * height,
+                    get_value(str(height)) + "K",
+                    ha='center', va='bottom', fontsize=12, rotation=45, fontweight='bold')
 
-fig.tight_layout()
 
-plt.savefig("Day_Wise_Target_vs_Sales.png")
-print('12. Day Wise Target vs Sales')
-plt.close()
-# --------------------------------------------------------------------------
+    autolabel(rects2)
+    fig.tight_layout()
 
-LD_Target_df = pd.read_sql_query("""Declare @CurrentMonth NVARCHAR(MAX);
-                Declare @DaysInMonth NVARCHAR(MAX);
-                SET @CurrentMonth = convert(varchar(6), GETDATE(),112)
-                SET @DaysInMonth = DAY(EOMONTH(GETDATE())) 
-                select ISNULL((Sum(TARGET)/@DaysInMonth), 0) as  YesterdayTarget from TDCL_BranchTarget  
-                where YEARMONTH = @CurrentMonth and AUDTORG like ?""", connection, params={branc_names})
-toto = LD_Target_df.values
-ld_target = int(toto[0, 0])
+    plt.savefig("Day_Wise_Target_vs_Sales.png")
+    print('12. Day Wise Target vs Sales')
+    plt.close()
+except:
+    print("sorry! 12. Day Wise Target vs Sales cannot be generated")
+    plt.figure(figsize=(12.81, 4.8))
+    plt.text(0.5, 0.5, str('Sorry! Due to data unavailability, the graph cannot be generated'), fontsize=25,
+             color='red',
+             horizontalalignment='center', verticalalignment='center')
+    plt.axis('off')
+    plt.savefig("Day_Wise_Target_vs_Sales.png")
+    plt.close()
+    # plt.show()
+    # print('12. Day Wise Target vs Sales')
 
-MTD_Target_df = pd.read_sql_query("""Declare @CurrentMonth NVARCHAR(MAX);
+# --------------------------------11. Target vs Sales ------------------------------------------
+try:
+    LD_Target_df = pd.read_sql_query("""Declare @CurrentMonth NVARCHAR(MAX);
+                    Declare @DaysInMonth NVARCHAR(MAX);
+                    SET @CurrentMonth = convert(varchar(6), GETDATE(),112)
+                    SET @DaysInMonth = DAY(EOMONTH(GETDATE())) 
+                    select ISNULL((Sum(TARGET)/@DaysInMonth), 0) as  YesterdayTarget from TDCL_BranchTarget  
+                    where YEARMONTH = @CurrentMonth and AUDTORG like ?""", connection, params={branc_names})
 
-                SET @CurrentMonth = convert(varchar(6), GETDATE(),112)
+    toto = LD_Target_df.values
+    ld_target = int(toto[0, 0])
 
-                select ISNULL((Sum(TARGET)), 0) as  MTDTarget from TDCL_BranchTarget  
-                where YEARMONTH = @CurrentMonth and AUDTORG like ? """, connection, params={branc_names})
+    MTD_Target_df = pd.read_sql_query("""Declare @CurrentMonth NVARCHAR(MAX);
+                    SET @CurrentMonth = convert(varchar(6), GETDATE(),112)
+                    select ISNULL((Sum(TARGET)), 0) as  MTDTarget from TDCL_BranchTarget  
+                    where YEARMONTH = @CurrentMonth and AUDTORG like ? """, connection, params={branc_names})
 
-momo = MTD_Target_df.values
-Mtd_target = int(momo[0, 0])
+    momo = MTD_Target_df.values
+    Mtd_target = int(momo[0, 0])
 
-from datetime import date
+    from datetime import date
 
-given_date = datetime.today().date()
+    given_date = datetime.today().date()
 
-toto = datetime.today().date()
-first = given_date.replace(day=1)
-day1 = date(toto.year, toto.month, toto.day)
-day2 = date(first.year, first.month, first.day)
-no_of_days = (day1 - day2).days
+    toto = datetime.today().date()
+    first = given_date.replace(day=1)
+    day1 = date(toto.year, toto.month, toto.day)
+    day2 = date(first.year, first.month, first.day)
+    no_of_days = (day1 - day2).days
 
-import calendar
-import datetime
+    import calendar
+    import datetime
 
-now = datetime.datetime.now()
-total_days = calendar.monthrange(now.year, now.month)[1]
+    now = datetime.datetime.now()
+    total_days = calendar.monthrange(now.year, now.month)[1]
+    final_mtd_target = int((Mtd_target / total_days) * no_of_days)
 
-final_mtd_target = int((Mtd_target / total_days) * no_of_days)
-
-YTD_Target_df = pd.read_sql_query(""" select ISNULL((Sum(TARGET)), 0) as  YTDTarget from TDCL_BranchTarget  
+    YTD_Target_df = pd.read_sql_query("""
+                select ISNULL((Sum(TARGET)), 0) as  YTDTarget from TDCL_BranchTarget  
                 where convert(varchar(4), YEARMONTH,112) = convert(varchar(4), GETDATE(),112)
-                  and AUDTORG like ?""",
-                                  connection, params={branc_names})
+                and AUDTORG like ?""",
+                connection, params={branc_names})
 
-yoyo = YTD_Target_df.values
+    yoyo = YTD_Target_df.values
 
-Ytd_target = int(yoyo[0, 0])
+    Ytd_target = int(yoyo[0, 0])
 
-final_ytd_target = int(Ytd_target - ((Mtd_target / total_days) * (total_days - no_of_days)))
+    final_ytd_target = int(Ytd_target - ((Mtd_target / total_days) * (total_days - no_of_days)))
 
-LD_Sales_df = pd.read_sql_query("""Declare @Currentday NVARCHAR(MAX);
+    LD_Sales_df = pd.read_sql_query("""Declare @Currentday NVARCHAR(MAX);
+                    SET @Currentday = convert(varchar(8), GETDATE()-1,112);
+                    select  Sum(EXTINVMISC) as  YesterdaySales from OESalesDetails  
+                    where LEFT(TRANSDATE,8) = @Currentday and AUDTORG like ? """, connection, params={branc_names})
 
-                SET @Currentday = convert(varchar(8), GETDATE()-1,112);
+    Ld_toto = LD_Sales_df.values
 
-                select  Sum(EXTINVMISC) as  YesterdaySales from OESalesDetails  
-                where LEFT(TRANSDATE,8) = @Currentday and AUDTORG like ? """, connection, params={branc_names})
+    MTD_Sales_df = pd.read_sql_query(""" Declare @Currentmonth NVARCHAR(MAX);
+                    SET @Currentmonth = convert(varchar(6), GETDATE(),112);
+                    select  Sum(EXTINVMISC) as  MTDSales from OESalesDetails  
+                    where LEFT(TRANSDATE,6) = @Currentmonth and AUDTORG like ?""", connection, params={branc_names})
 
-Ld_toto = LD_Sales_df.values
+    MTD_momo = MTD_Sales_df.values
 
-MTD_Sales_df = pd.read_sql_query(""" Declare @Currentmonth NVARCHAR(MAX);
-
-                SET @Currentmonth = convert(varchar(6), GETDATE(),112);
-
-                select  Sum(EXTINVMISC) as  MTDSales from OESalesDetails  
-                where LEFT(TRANSDATE,6) = @Currentmonth and AUDTORG like ?""", connection, params={branc_names})
-
-MTD_momo = MTD_Sales_df.values
-
-YTD_Sales_df = pd.read_sql_query("""Declare @Currentyear NVARCHAR(MAX);
-
+    YTD_Sales_df = pd.read_sql_query("""
+                Declare @Currentyear NVARCHAR(MAX);
                 SET @Currentyear = convert(varchar(4), GETDATE(),112);
-
                 select  Sum(EXTINVMISC) as  YTDSales from OESalesDetails  
                 where LEFT(TRANSDATE,4) = @Currentyear and AUDTORG like ? """, connection, params={branc_names})
 
-YTD_yoyo = YTD_Sales_df.values
+    YTD_yoyo = YTD_Sales_df.values
+    labels = ['LD', 'MTD', 'YTD']
+    aa = int(final_mtd_target / 1000)
+    bb = int(final_ytd_target / 1000)
+    cc = int(ld_target / 1000)
+    Targets = [cc, aa, bb]
 
-labels = ['LD', 'MTD', 'YTD']
-aa = int(final_mtd_target / 1000)
-bb = int(final_ytd_target / 1000)
-cc = int(ld_target / 1000)
-Targets = [cc, aa, bb]
+    Sales = [int(Ld_toto[0, 0] / 1000), int(MTD_momo[0, 0] / 1000), int(YTD_yoyo[0, 0] / 1000)]
 
-Sales = [int(Ld_toto[0, 0] / 1000), int(MTD_momo[0, 0] / 1000), int(YTD_yoyo[0, 0] / 1000)]
+    x = np.arange(len(labels))  # the label locations
+    width = 0.35  # the width of the bars
 
-x = np.arange(len(labels))  # the label locations
-width = 0.35  # the width of the bars
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(x - width / 2, Targets, width, label='Target')
+    rects2 = ax.bar(x + width / 2, Sales, width, label='Sales')
 
-fig, ax = plt.subplots()
-rects1 = ax.bar(x - width / 2, Targets, width, label='Target')
-rects2 = ax.bar(x + width / 2, Sales, width, label='Sales')
+    maf_kor5 = max(Sales)
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    plt.yticks(np.arange(0, maf_kor5 + (.8 * maf_kor5), maf_kor5 / 5), fontsize=12)
+    ax.set_ylabel('Amount', fontsize='14', color='black', fontweight='bold')
+    ax.set_xlabel('Group Wise Sales', fontsize='14', color='black', fontweight='bold')
+    ax.set_title('11. Target vs Sales', fontsize=16, fontweight='bold', color='#3e0a75')
 
-maf_kor5 = max(Targets)
-# Add some text for labels, title and custom x-axis tick labels, etc.
-plt.yticks(np.arange(0, maf_kor5 + (.8 * maf_kor5), maf_kor5 / 5), fontsize=12)
-ax.set_ylabel('Amount', fontsize='14', color='black', fontweight='bold')
-ax.set_xlabel('Group Wise Sales', fontsize='14', color='black', fontweight='bold')
-ax.set_title('11. Target vs Sales', fontsize=16, fontweight='bold', color='#3e0a75')
-
-ax.set_xticks(x)
-ax.set_xticklabels(labels)
-ax.legend()
-
-
-def autolabel(bars):
-    for bar in bars:
-        height = int(bar.get_height())
-        ax.text(bar.get_x() + bar.get_width() / 2., .995 * height,
-                get_value(str(height)) + "K",
-                ha='center', va='bottom', fontsize=12, rotation=45, fontweight='bold')
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.legend()
 
 
-autolabel(rects1)
-autolabel(rects2)
+    def autolabel(bars):
+        for bar in bars:
+            height = int(bar.get_height())
+            ax.text(bar.get_x() + bar.get_width() / 2., .995 * height,
+                    get_value(str(height)) + "K",
+                    ha='center', va='bottom', fontsize=12, rotation=45, fontweight='bold')
 
-fig.tight_layout()
 
-# plt.show()
-plt.savefig('LD_MTD_YTD_TARGET_vs_sales.png')
-print('11. Target vs Sales ')
+    autolabel(rects1)
+    autolabel(rects2)
 
-plt.close()
+    fig.tight_layout()
 
+    # plt.show()
+    plt.savefig('LD_MTD_YTD_TARGET_vs_sales.png')
+    print('11. Target vs Sales ')
+
+    plt.close()
+except:
+    print("sorry! 11. Target vs Sales cannot be generated")
+    plt.figure(figsize=(6.4, 4.8))
+    plt.text(0.5, 0.5, str('Sorry! Due to data unavailability, the graph cannot be generated'), fontsize=25,
+             color='red',
+             horizontalalignment='center', verticalalignment='center')
+    plt.axis('off')
+    # plt.show()
+    plt.savefig('LD_MTD_YTD_TARGET_vs_sales.png')
 # -------------------------------------cumulative sales vs target-----------------
 
+ever_sale_df = pd.read_sql_query("""
+            select right(formatdate,2) as days,isnull(amount,0) as Amount from (
+            select formatdate from [Calendar] where left(formatdate,6)=convert(varchar(6), GETDATE(),112)) as cal
+            left join (
+            select cast(transdate as varchar(8)) as Transdate,sum(EXTINVMISC)/1000 as amount from OESalesDetails
+            where left(transdate,6)=convert(varchar(6), GETDATE(),112) and AUDTORG like ?
+            group by cast(transdate as varchar(8))) as sales
+            on cal.formatdate=sales.Transdate
+            order by formatdate""", connection, params={branc_names})
 
-daily_sales2_df = pd.read_sql_query("""select Right(transdate,2) as [day], Sum(EXTINVMISC)/1000 as  EverydaySales from OESalesDetails  
-                where LEFT(TRANSDATE,6) =convert(varchar(6), GETDATE(),112)  and AUDTORG like ?
-                group by transdate
-                order by transdate""", connection, params={branc_names})
+all_days_in_month = ever_sale_df['days'].tolist()
+day_to_day_sale = ever_sale_df['Amount'].tolist()
+# print(all_days_in_month)
+# print(day_to_day_sale)
+
+from datetime import date
+
+today = date.today()
+
+current_day = today.strftime("%d")
+current_day_in_int = int(current_day)
+# print(current_day_in_int)
+
+final_days_array = []
+final_sales_array = []
+for t_va in range(0, current_day_in_int):
+    # print(t_va)
+    final_days_array.append(all_days_in_month[t_va])
+    final_sales_array.append(day_to_day_sale[t_va])
+
+# print(final_days_array)
+# print(final_sales_array)
 
 EveryD_Target2_df = pd.read_sql_query("""Declare @CurrentMonth NVARCHAR(MAX);
                 Declare @DaysInMonth NVARCHAR(MAX);
@@ -1278,13 +1365,10 @@ totarget = EveryD_Target2_df.values
 target_for_target = int(totarget[0, 0])
 # print(target_for_target)
 
+y_pos = np.arange(len(final_days_array))
+# print(y_pos)
 
-Every_day = daily_sales2_df['day'].tolist()
-# print(Every_day)
-y_pos = np.arange(len(Every_day))
-
-every_day_sale = daily_sales2_df['EverydaySales'].tolist()
-# print(every_day_sale)
+# --------------------------------------copy--------------------------------------
 
 n = 1
 Target = []
@@ -1296,8 +1380,9 @@ for z in y_pos:
 
 # print(Target)
 # print(labell)
-labell.append(20)
+# labell.append(20)
 
+# sys.exit()
 # ----------------code for cumulitive sales------------
 import calendar
 import datetime
@@ -1321,7 +1406,7 @@ for t_value in range(0, total_days + 1):
     fin_target = 0
 # print(ttt) #-------------------target data
 
-values = every_day_sale
+values = final_sales_array
 length = len(values)
 
 new = [0]
@@ -1360,7 +1445,7 @@ plt.ylabel('Amount', fontsize='14', color='black', fontweight='bold')
 # ax.set_xlabel('Day', fontsize='14', color='black', fontweight='bold')
 plt.title('13. MTD Target vs Sales - Cumulative', fontsize=16, fontweight='bold', color='#3e0a75')
 plt.xticks(np.arange(1, total_days + 1, 1))
-plt.legend(['sales', 'target'], loc='upper left', fontsize='14')
+plt.legend(['sales', 'target'], loc='upper right', fontsize='14')
 plt.text(list_index_for_sale, ttt[list_index_for_sale], get_value(str(int(ttt[list_index_for_sale]))) + 'K',
          color='black', fontsize=12, fontweight='bold')
 plt.text(list_index_for_sale, new[list_index_for_sale], get_value(str(int(new[list_index_for_sale]))) + 'K',
@@ -1370,10 +1455,10 @@ plt.text(list_index_for_target, ttt[list_index_for_target], get_value(str(int(tt
 
 plt.grid()
 plt.savefig("Cumulative_Day_Wise_Target_vs_Sales.png")
+# plt.show()
 plt.close()
 print('13. Cumulative day wise target sales')
 # plt.show()
-
 
 # ------------adding cause wise return and delivery man wise return----------
 
@@ -1413,20 +1498,21 @@ imageSize.save(dirpath + "/Cumulative_Day_wise_target_sales.png")
 # --------------- Close TO Mature Credit Redords -------------------
 
 ClosedToMaturedcredit_df = pd.read_sql_query("""
-                   select CUSTOMER as 'Cust ID', CUSTNAME as 'Cust Name',
-    CustomerInformation.TEXTSTRE1 as 'Address', CustomerInformation.MSOTR as 'Territory',INVNUMBER as 'Inv Number',
-    convert(varchar,convert(datetime,(convert(varchar(8),INVDATE,112))),106)  as 'Inv Date', CustomerInformation.CREDIT_LIMIT_DAYS as 'Days Limit',
-    (datediff([dd] , CONVERT (DATETIME , LTRIM(cust_out.INVDATE) , 102) , GETDATE())+1-CREDIT_LIMIT_DAYS)*-1 as 'Matured In Days', OUT_NET as 'Credit Amount'
-    from [ARCOUT].dbo.[CUST_OUT]
-    join ARCHIVESKF.dbo.CustomerInformation
-    on [CUST_OUT].CUSTOMER = CustomerInformation.IDCUST
+            select CUSTOMER as 'Cust ID', CUSTNAME as 'Cust Name',
+            CustomerInformation.TEXTSTRE1 as 'Address', CustomerInformation.MSOTR as 'Territory',INVNUMBER as 'Inv Number',
+            convert(varchar,convert(datetime,(convert(varchar(8),INVDATE,112))),106)  as 'Inv Date', CustomerInformation.CREDIT_LIMIT_DAYS as 'Days Limit',
+            (datediff([dd] , CONVERT (DATETIME , LTRIM(cust_out.INVDATE) , 102) , GETDATE())+1-CREDIT_LIMIT_DAYS)*-1 as 'Matured In Days', OUT_NET as 'Credit Amount'
+            from [ARCOUT].dbo.[CUST_OUT]
+            join ARCHIVESKF.dbo.CustomerInformation
+            on [CUST_OUT].CUSTOMER = CustomerInformation.IDCUST
+        
+            where  [ARCOUT].dbo.[CUST_OUT].AUDTORG like ? and TERMS<>'Cash'
+            and (datediff([dd] , CONVERT (DATETIME , LTRIM(cust_out.INVDATE) , 102) , GETDATE())+1-CREDIT_LIMIT_DAYS)  between -3 and 0
+            order by (datediff([dd] , CONVERT (DATETIME , LTRIM(cust_out.INVDATE) , 102) , GETDATE())+1-CREDIT_LIMIT_DAYS)desc
+            , OUT_NET desc
+        
+             """, connection, params={branc_names})
 
-    where  [ARCOUT].dbo.[CUST_OUT].AUDTORG like ? and TERMS<>'Cash'
-        and (datediff([dd] , CONVERT (DATETIME , LTRIM(cust_out.INVDATE) , 102) , GETDATE())+1-CREDIT_LIMIT_DAYS)  between -3 and 0
-        order by (datediff([dd] , CONVERT (DATETIME , LTRIM(cust_out.INVDATE) , 102) , GETDATE())+1-CREDIT_LIMIT_DAYS)desc
-        , OUT_NET desc
-
-     """, connection, params={branc_names})
 writer = pd.ExcelWriter('ClosedToMatured.xlsx', engine='xlsxwriter')
 ClosedToMaturedcredit_df.index = np.arange(1, len(ClosedToMaturedcredit_df) + 1)
 ClosedToMaturedcredit_df.to_excel(writer, sheet_name='Sheet1', index=True)
@@ -1448,19 +1534,20 @@ writer.save()
 print('Closed to Matured : Excel Created')
 
 ClosedToMaturedcredittable = pd.read_sql_query("""
-      select top 20 CUSTOMER as 'Cust ID', CUSTNAME as 'Cust Name',
-    CustomerInformation.TEXTSTRE1 as 'Address', CustomerInformation.MSOTR as 'Territory',INVNUMBER as 'Inv Number',
-    convert(varchar,convert(datetime,(convert(varchar(8),INVDATE,112))),106)  as 'Inv Date', CustomerInformation.CREDIT_LIMIT_DAYS as 'Days Limit',
-    (datediff([dd] , CONVERT (DATETIME , LTRIM(cust_out.INVDATE) , 102) , GETDATE())+1-CREDIT_LIMIT_DAYS)*-1 as 'Matured In Days', OUT_NET as 'Credit Amount'
-    from [ARCOUT].dbo.[CUST_OUT]
-    join ARCHIVESKF.dbo.CustomerInformation
-    on [CUST_OUT].CUSTOMER = CustomerInformation.IDCUST
+            select top 20 CUSTOMER as 'Cust ID', CUSTNAME as 'Cust Name',
+            CustomerInformation.TEXTSTRE1 as 'Address', CustomerInformation.MSOTR as 'Territory',INVNUMBER as 'Inv Number',
+            convert(varchar,convert(datetime,(convert(varchar(8),INVDATE,112))),106)  as 'Inv Date', CustomerInformation.CREDIT_LIMIT_DAYS as 'Days Limit',
+            (datediff([dd] , CONVERT (DATETIME , LTRIM(cust_out.INVDATE) , 102) , GETDATE())+1-CREDIT_LIMIT_DAYS)*-1 as 'Matured In Days', OUT_NET as 'Credit Amount'
+            from [ARCOUT].dbo.[CUST_OUT]
+            join ARCHIVESKF.dbo.CustomerInformation
+            on [CUST_OUT].CUSTOMER = CustomerInformation.IDCUST
+        
+            where  [ARCOUT].dbo.[CUST_OUT].AUDTORG like ? and TERMS<>'Cash'
+            and (datediff([dd] , CONVERT (DATETIME , LTRIM(cust_out.INVDATE) , 102) , GETDATE())+1-CREDIT_LIMIT_DAYS)  between -3 and 0
+            order by (datediff([dd] , CONVERT (DATETIME , LTRIM(cust_out.INVDATE) , 102) , GETDATE())+1-CREDIT_LIMIT_DAYS)desc
+            , OUT_NET desc
+            """, connection, params={branc_names})
 
-    where  [ARCOUT].dbo.[CUST_OUT].AUDTORG like ? and TERMS<>'Cash'
-        and (datediff([dd] , CONVERT (DATETIME , LTRIM(cust_out.INVDATE) , 102) , GETDATE())+1-CREDIT_LIMIT_DAYS)  between -3 and 0
-        order by (datediff([dd] , CONVERT (DATETIME , LTRIM(cust_out.INVDATE) , 102) , GETDATE())+1-CREDIT_LIMIT_DAYS)desc
-        , OUT_NET desc
-                   """, connection, params={branc_names})
 writer = pd.ExcelWriter('ClosedToMaturedTable.xlsx', engine='xlsxwriter')
 ClosedToMaturedcredittable.index = np.arange(1, len(ClosedToMaturedcredittable) + 1)
 ClosedToMaturedcredittable.to_excel(writer, sheet_name='Sheet1', index=True)
@@ -1779,20 +1866,23 @@ to = ['rejaul.islam@transcombd.com', '']
 cc = ['', '']
 bcc = ['', '']
 
-# to = ['tdclndm@tdcl.transcombd.com','']
-# cc = ['hislam@skf.transcombd.com','muhammad.mainuddin@tdcl.transcombd.com','nurul.amin@tdcl.transcombd.com']
-# bcc = ['biswascma@yahoo.com', 'bayezid@transcombd.com', 'zubair.transcom@gmail.com', 'yakub@transcombd.com',
-#        'tawhid@transcombd.com', 'rejaul.islam@transcombd.com','fazle.rabby@transcombd.com','aftab.uddin@transcombd.com','roseline@transcombd.com']
+# ---------------group mail------------------
+# msgRoot = MIMEMultipart('related')
+# me = 'erp-bi.service@transcombd.com'
+# to = ['tdclndm@tdcl.transcombd.com', '']
+# cc = ['hislam@skf.transcombd.com', 'muhammad.mainuddin@tdcl.transcombd.com', 'nurul.amin@tdcl.transcombd.com']
+# bcc = ['biswascma@yahoo.com', 'zubair.transcom@gmail.com', 'yakub@transcombd.com',
+#        'tawhid@transcombd.com', 'rejaul.islam@transcombd.com', 'fazle.rabby@transcombd.com',
+#        'aftab.uddin@transcombd.com', 'roseline@transcombd.com']
 
 recipient = to + cc + bcc
 
+# # ------------ Group email --------------------
 subject = "SK+F Formulation Reports - " + branch_name + " Branch"
-
 email_server_host = 'mail.transcombd.com'
 port = 25
 
 msgRoot['From'] = me
-# msgRoot['to'] = recipient
 msgRoot['To'] = ', '.join(to)
 msgRoot['Cc'] = ', '.join(cc)
 msgRoot['Bcc'] = ', '.join(bcc)
@@ -1956,4 +2046,3 @@ server.sendmail(me, recipient, msgRoot.as_string())
 print('Mail Send')
 print('-------------------')
 server.close()
-
