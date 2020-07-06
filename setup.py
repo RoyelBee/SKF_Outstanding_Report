@@ -1866,7 +1866,7 @@ to = ['rejaul.islam@transcombd.com', '']
 cc = ['', '']
 bcc = ['', '']
 
-# ---------------group mail------------------
+# ---------------group mail----------------------------------------
 # msgRoot = MIMEMultipart('related')
 # me = 'erp-bi.service@transcombd.com'
 # to = ['tdclndm@tdcl.transcombd.com', '']
