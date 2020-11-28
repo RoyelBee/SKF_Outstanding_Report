@@ -122,9 +122,9 @@ def get_value(value):
 
 
 connection = db.connect('DRIVER={SQL Server};'
-                        'SERVER=137.116.139.217;'
+                        'SERVER=--------------;'
                         'DATABASE=ARCHIVESKF;'
-                        'UID=sa;PWD=erp@123')
+                        'UID=--------------;PWD=----------------------------')
 
 cursor = connection.cursor()
 
